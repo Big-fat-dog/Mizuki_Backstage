@@ -1,0 +1,75 @@
+import re
+from datetime import datetime
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from app.schemas.article import Frontmatter
+from app.services.github_service import commit_md_to_github
+from typing import Annotated, List
+from app.utils.my_logger import logger
+router = APIRouter(
+    prefix="/article",
+    tags=["article"],
+    responses={404: {"description": "Not found"}}
+)
+
+@router.post("/upload")
+async def upload(frontmatter: Frontmatter,slug:Annotated[str,Form(description="文件夹名称")],image:Annotated[List[UploadFile],File([])],md_file:UploadFile=File(...),cover:UploadFile=File(...)):
+    pth = "/article/upload"
+    logger.info(f"{pth}接口：收到请求{md_file.filename}，正在读取")
+    front = f"""---
+    title: {frontmatter.title}
+    categories: {frontmatter.categories}
+    description: "{frontmatter.description}"
+    tags: {frontmatter.tags}
+    draft: {frontmatter.draft}
+    published: {frontmatter.published.isoformat() if frontmatter.published else "null"}
+    image: {frontmatter.image}
+    pinned: {frontmatter.pinned}
+    licenseName: {frontmatter.licenseName}
+    ---\n\n"""
+    if not slug:
+        logger.info(f"{pth}接口：没有上传文件名")
+        slug = f"post-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    else:
+        # 🔥 关键：安全校验 slug！
+        slug = slug.strip().lower()
+        # 1. 只允许字母、数字、连字符
+        if not re.match(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$", slug):
+            logger.error(f"{pth}接口：文件名错误！包含非法字符")
+            raise HTTPException(
+                status_code=400,
+                detail="slug 只能包含小写字母、数字、连字符，且不能以连字符开头/结尾"
+            )
+
+        # 2. 长度限制
+        if len(slug) < 3 or len(slug) > 60:
+            logger.error(f"{pth}接口：文件名错误！长度错误")
+            raise HTTPException(
+                status_code=400,
+                detail="slug 长度必须在 3-60 个字符之间"
+            )
+        # === 1. 校验并读取 Markdown ===
+    logger.info(f"{pth}接口：开始处理文件")
+    if not md_file.filename.endswith(".md"):
+        logger.error(f"{pth}接口：拒绝非法文件{md_file.filename}")
+        raise HTTPException(status_code=400, detail="正文必须是 .md 文件！")
+    original_md = (await md_file.read()).decode("utf-8")
+    new_md = front+original_md
+    files_to_commit = {f"{slug}/index.md": new_md.encode("utf-8")}
+    if not cover.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
+        logger.error(f"{pth}接口：{cover.filename}不规范！")
+        raise HTTPException(status_code=400, detail="封面必须是图片文件 (.png, .jpg, .webp)!")
+    cover_content = await cover.read()
+    target_filename = "1.webp"
+    target_path =f"{slug}/{target_filename}"
+    # D. 存入字典 (必须是 bytes!)
+    files_to_commit[target_path] = cover_content
+    for i in image:
+        if not i.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
+            logger.error(f"{pth}接口：{i.filename}，上传图片不规范")
+            raise HTTPException(status_code=400, detail="必须是图片文件 (.png, .jpg, .webp)!")
+        img = await i.read()
+        target_path = f"{slug}/{i.filename}"
+        files_to_commit[target_path] = img
+    logger.info(f"{pth}接口：文件处理成功，开始上传至github")
+
+

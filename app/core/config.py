@@ -3,7 +3,7 @@ class Settings(BaseSettings):
     GITHUB_TOKEN:str
     REPO_NAME:str
     BRANCH_NAME:str="main"
-    CONTENT_PATH:str="src/content/spec"
+    CONTENT_PATH:str="src/content/posts"
 
     model_config=SettingsConfigDict(
         env_file=".env",
