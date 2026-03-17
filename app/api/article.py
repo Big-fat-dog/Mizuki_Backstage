@@ -3,17 +3,36 @@ from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from app.schemas.article import Frontmatter
 from app.services.github_service import commit_md_to_github
-from typing import Annotated, List
+from typing import Annotated
 from app.utils.my_logger import logger
 router = APIRouter(
     prefix="/article",
     tags=["article"],
     responses={404: {"description": "Not found"}}
 )
+frontmatter_schema = Frontmatter.model_json_schema()
 
 @router.post("/upload")
-async def upload(frontmatter: Frontmatter,slug:Annotated[str,Form(description="文件夹名称")],image:Annotated[List[UploadFile],File([])],md_file:UploadFile=File(...),cover:UploadFile=File(...)):
+async def upload(frontmatter_json: Annotated[str,Form(alias="frontmatter",json_schema_extra={
+                "example": {
+                    "title": "我的文章",
+                    "description": "这是描述",
+                    "tags": ["tech", "astro"],
+                    "published": "2026-03-17",
+                    "draft": False,
+                    "categories": "教程",
+                    "pinned": True,
+                    "licenseName": "MIT",
+                    "image": "./1.webp"
+                },
+                "format": "json-string"
+            })],slug:Annotated[str,Form(description="文件夹名称")],
+        image:Annotated[list[UploadFile], File(multiple=True,media_type="multipart/form-data",description="Multiple files as UploadFile")]=[],
+        md_file:UploadFile=File(...),
+        cover:UploadFile=File(...)
+                 ):
     pth = "/article/upload"
+    frontmatter = Frontmatter.model_validate_json(frontmatter_json)
     logger.info(f"{pth}接口：收到请求{md_file.filename}，正在读取")
     front = f"""---
     title: {frontmatter.title}
@@ -54,7 +73,7 @@ async def upload(frontmatter: Frontmatter,slug:Annotated[str,Form(description="�
         raise HTTPException(status_code=400, detail="正文必须是 .md 文件！")
     original_md = (await md_file.read()).decode("utf-8")
     new_md = front+original_md
-    files_to_commit = {f"{slug}/index.md": new_md.encode("utf-8")}
+    files_to_commit = {f"{slug}/index.md": new_md}
     if not cover.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
         logger.error(f"{pth}接口：{cover.filename}不规范！")
         raise HTTPException(status_code=400, detail="封面必须是图片文件 (.png, .jpg, .webp)!")
@@ -71,5 +90,8 @@ async def upload(frontmatter: Frontmatter,slug:Annotated[str,Form(description="�
         target_path = f"{slug}/{i.filename}"
         files_to_commit[target_path] = img
     logger.info(f"{pth}接口：文件处理成功，开始上传至github")
+    commit_md_to_github(files_to_commit)
+    logger.info(f"{pth}接口：上传完毕")
+    return {"msg":"success"}
 
 

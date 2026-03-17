@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>文章上传测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input, textarea, select { width: 100%; padding: 8px; box-sizing: border-box; }
+    button { background: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+    button:hover { background: #45a049; }
+    .result { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>文章上传测试</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <!-- slug -->
+    <div class="form-group">
+      <label for="slug">Slug (文件夹名):</label>
+      <input type="text" id="slug" name="slug" required placeholder="如: my-post" />
+    </div>
+
+    <!-- Frontmatter JSON (隐藏，由 JS 自动生成) -->
+    <input type="hidden" name="frontmatter" id="frontmatterInput" />
+
+    <!-- Markdown 文件 -->
+    <div class="form-group">
+      <label for="md_file">Markdown 正文 (.md):</label>
+      <input type="file" id="md_file" name="md_file" accept=".md" required />
+    </div>
+
+    <!-- 封面图 -->
+    <div class="form-group">
+      <label for="cover">封面图:</label>
+      <input type="file" id="cover" name="cover" accept="image/*" required />
+    </div>
+
+    <!-- 额外图片 -->
+    <div class="form-group">
+      <label for="image">额外图片 (可多选):</label>
+      <input type="file" id="image" name="image" accept="image/*" multiple />
+    </div>
+
+    <!-- Frontmatter 表单字段（用于收集数据） -->
+    <div class="form-group">
+      <label>Title:</label>
+      <input type="text" id="fm_title" value="我的测试文章" required />
+    </div>
+    <div class="form-group">
+      <label>Description:</label>
+      <textarea id="fm_description" rows="2" required>这是文章描述</textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (逗号分隔):</label>
+      <input type="text" id="fm_tags" value="tech,fastapi" placeholder="如: tech,python" />
+    </div>
+    <div class="form-group">
+      <label>Published (日期):</label>
+      <input type="date" id="fm_published" value="2026-03-17" />
+    </div>
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="fm_draft" /> Draft (草稿)
+      </label>
+    </div>
+    <div class="form-group">
+      <label>Categories:</label>
+      <input type="text" id="fm_categories" value="教程" />
+    </div>
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="fm_pinned" /> Pinned (置顶)
+      </label>
+    </div>
+    <div class="form-group">
+      <label>License Name:</label>
+      <input type="text" id="fm_licenseName" placeholder="如: MIT" />
+    </div>
+    <div class="form-group">
+      <label>Image (封面路径，默认 ./1.webp):</label>
+      <input type="text" id="fm_image" value="./1.webp" />
+    </div>
+
+    <button type="submit">上传文章</button>
+  </form>
+
+  <div id="result" class="result" style="display:none;"></div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // 1. 收集 Frontmatter 数据
+      const frontmatter = {
+        title: document.getElementById('fm_title').value,
+        description: document.getElementById('fm_description').value,
+        published: document.getElementById('fm_published').value || null,
+        draft: document.getElementById('fm_draft').checked,
+        tags: document.getElementById('fm_tags').value
+          ? document.getElementById('fm_tags').value.split(',').map(t => t.trim())
+          : [],
+        categories: document.getElementById('fm_categories').value || null,
+        pinned: document.getElementById('fm_pinned').checked,
+        licenseName: document.getElementById('fm_licenseName').value || null,
+        image: document.getElementById('fm_image').value || './1.webp'
+      };
+
+      // 2. 转成 JSON 字符串并填入隐藏字段
+      document.getElementById('frontmatterInput').value = JSON.stringify(frontmatter);
+
+      // 3. 构建 FormData
+      const formData = new FormData();
+      formData.append('slug', document.getElementById('slug').value);
+      formData.append('frontmatter', JSON.stringify(frontmatter)); // 关键！
+      formData.append('md_file', document.getElementById('md_file').files[0]);
+      formData.append('cover', document.getElementById('cover').files[0]);
+
+      // 4. 添加额外图片
+      const imageFiles = document.getElementById('image').files;
+      for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('image', imageFiles[i]);
+      }
+
+      // 5. 发送请求
+      try {
+        // 替换 fetch 地址
+const response = await fetch('http://localhost:8000/article/upload', {
+  method: 'POST',
+  body: formData
+});
+
+
+        const resultDiv = document.getElementById('result');
+        if (response.ok) {
+          resultDiv.innerHTML = '<strong>✅ 上传成功！</strong>';
+          resultDiv.style.display = 'block';
+        } else {
+          const error = await response.text();
+          resultDiv.innerHTML = `<strong>❌ 上传失败:</strong> ${error}`;
+          resultDiv.style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('result').innerHTML = `<strong>💥 请求出错:</strong> ${err.message}`;
+        document.getElementById('result').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

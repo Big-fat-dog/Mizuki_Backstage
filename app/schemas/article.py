@@ -12,3 +12,5 @@ class Frontmatter(Base):
     pinned:Annotated[Optional[bool],Field(default=False)]
     licenseName:Annotated[Optional[str],Field(default=None)]
     image:Annotated[Optional[str],Field(default="./1.webp")]
+if __name__ == "__main__":
+    print(Frontmatter.model_json_schema())
