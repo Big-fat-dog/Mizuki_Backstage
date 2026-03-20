@@ -2,13 +2,14 @@ from typing import Dict, Union
 from github import Github, InputGitTreeElement
 from app.core.config import settings
 from app.utils.my_logger import logger
+
+github_token = settings.GITHUB_TOKEN
+repo_name = settings.REPO_NAME
+branch_name = settings.BRANCH_NAME
+content_path = settings.CONTENT_PATH
+g = Github(github_token)
+repo = g.get_repo(repo_name)
 def commit_md_to_github(files:Dict[str, Union[bytes, str]]):
-    github_token=settings.GITHUB_TOKEN
-    repo_name=settings.REPO_NAME
-    branch_name=settings.BRANCH_NAME
-    content_path=settings.CONTENT_PATH
-    g=Github(github_token)
-    repo=g.get_repo(repo_name)
     try:
         ref = repo.get_git_ref(f"heads/{branch_name}")
         latest_commit = repo.get_git_commit(ref.object.sha)
@@ -61,3 +62,41 @@ def commit_md_to_github(files:Dict[str, Union[bytes, str]]):
     except Exception as e:
         logger.error(f"更新分支失败: {e}")
         raise RuntimeError("提交成功但分支未更新！")
+
+def get_all_md():
+    #获取所有的博客文章文件夹
+    contents= repo.get_contents("/src/content/posts")
+    all_md = []
+    try:
+        for content in contents:
+            all_md.append(content.path)
+    except Exception as e:
+        logger.error(f"出现错误{e}")
+    return all_md
+
+def delete_md(file_path):
+    try:
+        contents = repo.get_contents(file_path)
+        if isinstance(contents,list):
+            #如果是个目录
+            logger.info(f"正在删除{file_path}里的内容,总共{len(contents)}个文件")
+            for item in contents:
+                if item.type == "dir":
+                    delete_md(item.path)
+                else:
+                    #删除子文件
+                    repo.delete_file(path=item.path,message=f"删除 {file_path.split('/')[-1]}",sha=item.sha)
+                    logger.info(f"{item.path}删除成功")
+            logger.info(f"目录{file_path}已经清空")
+        else:
+            #如果是个文件
+            logger.info(f"{contents.path}正在被删除")
+            repo.delete_file(path=file_path, message=f"删除 {file_path.split('/')[-1]}", sha=contents.sha)
+            logger.info("删除成功")
+    except Exception as e:
+        logger.error(f"出错了！{e}")
+        raise
+
+
+
+

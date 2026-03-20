@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from app.schemas.article import Frontmatter
-from app.services.github_service import commit_md_to_github
+from app.services.github_service import commit_md_to_github,get_all_md,delete_md
 from typing import Annotated
 from app.utils.my_logger import logger
 router = APIRouter(
@@ -35,16 +35,16 @@ async def upload(frontmatter_json: Annotated[str,Form(alias="frontmatter",json_s
     frontmatter = Frontmatter.model_validate_json(frontmatter_json)
     logger.info(f"{pth}接口：收到请求{md_file.filename}，正在读取")
     front = f"""---
-    title: {frontmatter.title}
-    categories: {frontmatter.categories}
-    description: "{frontmatter.description}"
-    tags: {frontmatter.tags}
-    draft: {frontmatter.draft}
-    published: {frontmatter.published.isoformat() if frontmatter.published else "null"}
-    image: {frontmatter.image}
-    pinned: {frontmatter.pinned}
-    licenseName: {frontmatter.licenseName}
-    ---\n\n"""
+title: {frontmatter.title}
+category: {frontmatter.categories}
+description: "{frontmatter.description}"
+tags: {frontmatter.tags}
+draft: {frontmatter.draft}
+published: {frontmatter.published.isoformat() if frontmatter.published else "null"}
+image: {frontmatter.image}
+pinned: {frontmatter.pinned}
+licenseName: {frontmatter.licenseName}
+---\n\n"""
     if not slug:
         logger.info(f"{pth}接口：没有上传文件名")
         slug = f"post-{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -93,5 +93,21 @@ async def upload(frontmatter_json: Annotated[str,Form(alias="frontmatter",json_s
     commit_md_to_github(files_to_commit)
     logger.info(f"{pth}接口：上传完毕")
     return {"msg":"success"}
+
+@router.get("/get_all_articles")
+async def get_all_articles():
+    contents = get_all_md()
+    return {
+        "data": contents,
+    }
+
+@router.post("/delete_article")
+async def delete_article(file_path):
+    if file_path.startswith("src/content/posts"):
+        delete_md(file_path)
+    else:
+        raise HTTPException(status_code=404)
+    return {"msg":"success"}
+
 
 
