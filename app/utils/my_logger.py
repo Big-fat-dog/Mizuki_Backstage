@@ -50,7 +50,7 @@ def setup_logger(name: str = "app") -> logging.Logger:
 
     # --- 3. 文件处理器 (按天切割) ---
     # 文件名：logs/app.log
-    # 备份文件名：logs/app.log.2026-03-15
+    # 备份文件名：logs/app.log
     file_handler = TimedRotatingFileHandler(
         filename=LOG_DIR / f"{name}.log",
         when="midnight",  # 每天午夜切割
