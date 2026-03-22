@@ -1,4 +1,3 @@
-from datetime import datetime
 from app.schemas.base import Base
 from pydantic import Field
 from typing import Optional, Annotated,List

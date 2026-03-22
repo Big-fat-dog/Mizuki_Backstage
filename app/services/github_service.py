@@ -2,7 +2,6 @@ from typing import Dict, Union
 from github import Github, InputGitTreeElement
 from app.core.config import settings
 from app.utils.my_logger import logger
-
 github_token = settings.GITHUB_TOKEN
 repo_name = settings.REPO_NAME
 branch_name = settings.BRANCH_NAME
@@ -96,7 +95,6 @@ def delete_md(file_path):
     except Exception as e:
         logger.error(f"出错了！{e}")
         raise
-
 
 
 

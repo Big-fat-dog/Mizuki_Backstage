@@ -1,10 +1,10 @@
 from app.schemas.base import Base
 from pydantic import Field
 from typing import Optional, Annotated, Literal, List
-import re
+
 
 # 定义一个用于验证 "YYYY-MM" 格式的正则
-DATE_PATTERN = r"^\d{4}-\d{2}$"
+DATE_PATTERN = r"(^\d{4}-\d{2}$|^$)"
 class Anime(Base):
     title:Annotated[str,Field(min_length=1,max_length=30)]
     status:Annotated[Literal["watching","completed","planned"],Field(default="watching")]

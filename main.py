@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import article
+from app.api import article,anime
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -11,6 +11,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(article.router)
+app.include_router(anime.router)
 
 @app.get("/")
 async def root():
