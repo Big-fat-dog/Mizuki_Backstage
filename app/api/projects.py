@@ -9,7 +9,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-@router.post("/add_friends")
+@router.post("/add_projects")
 async def add_project(project: Projects):
     logger.info("正在添加项目")
     try:

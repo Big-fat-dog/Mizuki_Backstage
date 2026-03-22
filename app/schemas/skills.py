@@ -1,6 +1,6 @@
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field, Annotated, field_validator, model_validator
-import re
+from pydantic import Field, model_validator
+from app.schemas.base import Base
 
 # 定义枚举类型，确保数据规范
 CategoryType = Literal["frontend", "backend", "database", "tools", "other"]
@@ -8,7 +8,7 @@ LevelType = Literal["beginner", "intermediate", "advanced", "expert"]
 
 
 # 定义经验子模型
-class Experience(BaseModel):
+class Experience(Base):
     years: int = Field(ge=0, description="经验年数")
     months: int = Field(ge=0, le=11, description="经验月数 (0-11)")
 
@@ -23,7 +23,7 @@ class Experience(BaseModel):
         return self
 
 
-class Skill(BaseModel):
+class Skill(Base):
     # 1. ID: 必填，建议强制小写，防止 "React" 和 "react" 重复
     id: str = Field(min_length=1, max_length=50, description="技能唯一标识符 (建议小写)")
 
