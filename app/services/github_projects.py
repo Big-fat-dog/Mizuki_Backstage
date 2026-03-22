@@ -1,4 +1,6 @@
 import re
+from datetime import date
+
 from app.schemas.projects import Projects
 from app.services.github_service import repo, branch_name
 from app.utils.my_logger import logger
@@ -52,23 +54,19 @@ def update_projects_ts(project: Projects) -> None:
     # 构建可选字段
     optional_fields = ""
 
-    # liveDemo 字段
-    if project.liveDemo:
+    # 字符串字段：允许空字符串，只跳过 None
+    if project.liveDemo is not None:
         optional_fields += f'\n\t\tliveDemo: "{escape_ts_string(project.liveDemo)}",'
-
-    # sourceCode 字段
-    if project.sourceCode:
+    if project.sourceCode is not None:
         optional_fields += f'\n\t\tsourceCode: "{escape_ts_string(project.sourceCode)}",'
-
-    # visitUrl 字段
-    if project.visitUrl:
+    if project.visitUrl is not None:
         optional_fields += f'\n\t\tvisitUrl: "{escape_ts_string(project.visitUrl)}",'
 
-    # endDate 字段
-    if project.endDate:
+    # 日期字段
+    if project.endDate is not None:
         optional_fields += f'\n\t\tendDate: "{project.endDate}",'
 
-    # featured 字段（只有为 True 时才添加）
+    # 布尔字段：只有 True 才添加
     if project.featured:
         optional_fields += f"\n\t\tfeatured: true,"
 
@@ -79,7 +77,8 @@ def update_projects_ts(project: Projects) -> None:
 		image: "{escape_ts_string(project.image)}",
 		category: "{project.category}",
 		techStack: [{tech_stack_str}],
-		status: "{project.status}"{optional_fields}{tags_str}
+		startDate: "{project.startDate}",
+		status: "{project.status}",{optional_fields}{tags_str}
 	}},"""
 
     # 5. 插入到数组末尾
