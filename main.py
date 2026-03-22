@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import article,anime,diary
+from app.api import article,anime,diary,friends
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -13,6 +13,8 @@ app.add_middleware(
 app.include_router(article.router)
 app.include_router(anime.router)
 app.include_router(diary.router)
+app.include_router(friends.router)
+
 
 @app.get("/")
 async def root():

@@ -1,5 +1,5 @@
 import re
-from app.schemas.diary import Diary  # 你的 diary.py 模型
+from app.schemas.diary import Diary
 from app.services.github_service import repo, branch_name
 from app.utils.my_logger import logger
 
