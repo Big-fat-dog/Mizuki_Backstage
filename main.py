@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import article,anime,diary,friends,projects,skills
+from app.api import article,anime,diary,friends,projects,skills,timeline
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -18,6 +18,8 @@ app.include_router(friends.router)
 app.include_router(projects.router)
 
 app.include_router(skills.router)
+app.include_router(timeline.router)
+
 
 
 @app.get("/")

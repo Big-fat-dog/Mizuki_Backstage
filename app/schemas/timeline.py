@@ -1,15 +1,15 @@
 from typing import List, Optional, Literal
 from datetime import date
-from pydantic import BaseModel, Field, Annotated, field_validator
+from pydantic import  Field, field_validator
 import re
-
+from app.schemas.base import Base
 # 定义枚举类型
 EventType = Literal["education", "work", "project", "achievement"]
 LinkType = Literal["website", "github", "document", "video", "other"]
 
 
 # 定义链接子模型
-class EventLink(BaseModel):
+class EventLink(Base):
     label: str = Field(min_length=1, max_length=50, description="链接显示名称")
     url: str = Field(min_length=1, description="链接地址")
     type: LinkType = Field(default="website", description="链接类型")
@@ -26,7 +26,7 @@ class EventLink(BaseModel):
         return v
 
 
-class TimelineEvent(BaseModel):
+class TimelineEvent(Base):
     # 1. ID: 必填，唯一标识
     id: str = Field(min_length=1, max_length=100, description="事件唯一标识符")
 
