@@ -9,7 +9,7 @@ router = APIRouter(
 )
 @router.post("/add_diary")
 async def add_diary(diary: Diary):
-    logger.info(f"add diary: {diary}")
+    logger.info(f"add diary: {diary.id}")
     try:
         update_diary_ts(diary)
         return {'msg':"success"}

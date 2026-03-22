@@ -14,7 +14,7 @@ async def add_friend(friend:Friends):
     logger.info("正在添加友链")
     try:
         update_friends_ts(friend)
-        logger.info(f"友链添加成功{friend}")
+        logger.info(f"友链添加成功{friend.title}")
     except Exception as e:
         logger.error(f"友链添加失败_{e}")
         raise
