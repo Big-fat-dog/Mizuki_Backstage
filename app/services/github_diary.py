@@ -59,7 +59,7 @@ def update_diary_ts(diary: Diary) -> None:
     new_entry = f"""	{{
 		id: {new_id},
 		content: "{escape_ts_string(diary.content)}",
-		date: "{diary.date}"{images_str}
+		date: "{diary.date}",{images_str}
 	}},"""
 
     # 5. 插入到数组末尾

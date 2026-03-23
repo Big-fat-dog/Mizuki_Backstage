@@ -80,7 +80,7 @@ licenseName: {frontmatter.licenseName}
     cover_content = await cover.read()
     target_filename = "1.webp"
     target_path =f"{slug}/{target_filename}"
-    # D. 存入字典 (必须是 bytes!)
+    # D. 存入字典
     files_to_commit[target_path] = cover_content
     for i in image:
         if not i.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
