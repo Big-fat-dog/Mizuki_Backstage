@@ -1,4 +1,7 @@
 import re
+from app.services.github_anime import sanitize_filename
+from fastapi import UploadFile
+import os
 from app.schemas.diary import Diary
 from app.services.github_service import repo, branch_name
 from app.utils.my_logger import logger
@@ -53,7 +56,7 @@ def update_diary_ts(diary: Diary) -> None:
     # 构建 images 数组（如果存在）
     images_str = ""
     if diary.images:
-        image_list = ", ".join(f'"{escape_ts_string(img)}"' for img in diary.images)
+        image_list = ", ".join(f'"{escape_ts_string(f"/images/diary/{img}")}"' for img in diary.images)
         images_str = f"\n\t\timages: [{image_list}],"
 
     new_entry = f"""	{{
@@ -89,4 +92,38 @@ def update_diary_ts(diary: Diary) -> None:
         logger.info(f"✅ 成功添加日记: ID={new_id}")
     except Exception as e:
         logger.error(f"更新 diary.ts 失败: {e}")
+        raise
+
+def add_diary_image(cover:UploadFile):
+    if cover.filename.lower().strip() and cover.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif')):
+        logger.info(f"正在上传图片{cover}")
+        original_name = cover.filename
+        if not original_name:
+            logger.error("文件名为空")
+            raise ValueError("文件名为空")
+
+        # 校验扩展名（小写）
+        ext = os.path.splitext(original_name)[1].lower()
+        if ext not in ('.png', '.jpg', '.jpeg', '.webp', '.gif'):
+            logger.error(f"不支持的文件格式: {ext}")
+            raise ValueError(f"不支持的格式: {ext}")
+
+        # 生成安全文件名
+        safe_filename = sanitize_filename(original_name)
+        logger.info(f"原文件名: {original_name} → 安全文件名: {safe_filename}")
+        cover.file.seek(0)  # 确保从头读（防御性编程）
+        content = cover.file.read()
+        try:
+            repo.create_file(
+                path=f"public/images/diary/{cover.filename}",
+                content=content,
+                message=f"feat: add diary cover - {cover.filename}",
+                branch=branch_name
+            )
+            logger.info("成功添加！😋")
+        except Exception as e:
+            logger.error(f"添加失败——{e}")
+            raise
+    else:
+        logger.error(f"输入文件格式不正确！")
         raise
