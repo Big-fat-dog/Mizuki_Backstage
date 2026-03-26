@@ -10,15 +10,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(article.router)
-app.include_router(anime.router)
-app.include_router(diary.router)
-app.include_router(friends.router)
+app.include_router(article.router,prefix="/api")
+app.include_router(anime.router,prefix="/api")
+app.include_router(diary.router,prefix="/api")
+app.include_router(friends.router,prefix="/api")
 
-app.include_router(projects.router)
+app.include_router(projects.router,prefix="/api")
 
-app.include_router(skills.router)
-app.include_router(timeline.router)
+app.include_router(skills.router,prefix="/api")
+app.include_router(timeline.router,prefix="/api")
 
 
 

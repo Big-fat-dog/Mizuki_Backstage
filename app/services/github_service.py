@@ -1,4 +1,5 @@
 from typing import Dict, Union
+import base64
 from github import Github, InputGitTreeElement
 from app.core.config import settings
 from app.utils.my_logger import logger
@@ -27,10 +28,12 @@ def commit_md_to_github(files:Dict[str, Union[bytes, str]]):
             blob = repo.create_git_blob(content, "utf-8")
             mode = "100644"  # 普通文件
         else:
-            # 二进制文件：转成十六进制字符串
-            hex_content = content.hex()
-            blob = repo.create_git_blob(hex_content, "utf-8")
-            mode = "100644"
+            # 二进制文件：转成base64
+            base64_content = base64.b64encode(content).decode('utf-8')
+
+            # 步骤 B: 调用 API，告诉 GitHub 这是 base64 编码的数据
+            # 这样 GitHub 会自动把它还原成二进制文件存储
+            blob = repo.create_git_blob(base64_content, "base64")
 
         element = InputGitTreeElement(
             path=full_path,

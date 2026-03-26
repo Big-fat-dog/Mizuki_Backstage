@@ -16,7 +16,7 @@ async def add_diary(diary: Diary):
     except Exception as e:
         logger.error(f"上传日记出错！——{e}")
         raise
-@router.post("add_diary_cover")
+@router.post("/add_diary_cover")
 async def add_cover(cover: UploadFile=File(...)):
     logger.info(f"收到日记请求 cover {cover.filename}")
     add_diary_image(cover)

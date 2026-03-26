@@ -36,7 +36,7 @@ async def upload(frontmatter_json: Annotated[str,Form(alias="frontmatter",json_s
     logger.info(f"{pth}接口：收到请求{md_file.filename}，正在读取")
     front = f"""---
 title: {frontmatter.title}
-category: {frontmatter.categories}
+category: {frontmatter.category}
 description: "{frontmatter.description}"
 tags: {frontmatter.tags}
 draft: {frontmatter.draft}

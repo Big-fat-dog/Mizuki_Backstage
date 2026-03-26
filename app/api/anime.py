@@ -9,12 +9,12 @@ router = APIRouter(
     responses={404: {"description": "Not found"}}
 )
 
-@router.post("add_anime")
+@router.post("/add_anime")
 async def add_anime(anime: Anime):
     logger.info(f"收到番剧请求 {anime.title}")
     update_anime_ts(anime)
     return {"msg": "success"}
-@router.post("add_anime_cover")
+@router.post("/add_anime_cover")
 async def add_anime(cover: UploadFile=File(...)):
     logger.info(f"收到番剧请求 cover {cover.filename}")
     add_cover(cover)

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mizuki后台管理器</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <style>
+        /* --- 样式完全保持不变 --- */
+        :root { --primary: #6366f1; --primary-hover: #4f46e5; --bg-body: #f3f4f6; --bg-card: #ffffff; --text-main: #1f2937; --text-sub: #6b7280; --border: #e5e7eb; --success: #10b981; --danger: #ef4444; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 280px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; overflow-y: auto; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        .nav-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: var(--text-sub); font-weight: 500; transition: 0.2s; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+        .nav-item:hover { background: #f9fafb; color: var(--primary); }
+        .nav-item.active { background: #e0e7ff; color: var(--primary); font-weight: 600; }
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { margin-bottom: 30px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header p { color: var(--text-sub); margin-top: 5px; }
+        .card { background: var(--bg-card); border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; border: 1px solid var(--border); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: span 2; }
+        .three-col { grid-template-columns: repeat(3, 1fr); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .hint { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
+        .tags-input { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 42px; cursor: text; }
+        .tags-input:focus-within { border-color: var(--primary); }
+        .tag { background: #e0e7ff; color: var(--primary); padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; animation: popIn 0.2s ease; }
+        .tag span { cursor: pointer; font-weight: bold; opacity: 0.7; }
+        .tag span:hover { opacity: 1; color: var(--danger); }
+        .tag-input-field { border: none; outline: none; flex: 1; min-width: 100px; background: transparent; }
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
+        .file-drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; background: #f9fafb; }
+        .file-drop-zone:hover { border-color: var(--primary); background: #eef2ff; }
+        .file-list { margin-top: 10px; text-align: left; font-size: 0.9rem; }
+        .file-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }
+        .nested-card { background: #f9fafb; border: 1px dashed var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .nested-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 600; color: var(--text-sub); font-size: 0.9rem; }
+        .btn-add { background: #f0fdf4; color: var(--success); border: 1px solid var(--success); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-remove { background: #fee2e2; color: var(--danger); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .hidden { display: none; }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @media (max-width: 768px) { body { flex-direction: column; height: auto; overflow: auto; } .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); } .form-grid, .three-col { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
+
+        /* 新增：Toast 提示样式 */
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateX(150%); transition: transform 0.3s ease; z-index: 9999; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="logo">🚀 Mizuki后台管理器</div>
+    <nav>
+        <div class="nav-item active" onclick="switchTab('article')">📝 文章发布</div>
+        <div class="nav-item" onclick="switchTab('diary')">📔 生活日记</div>
+        <div class="nav-item" onclick="switchTab('anime')">📺 番剧追踪</div>
+        <div class="nav-item" onclick="switchTab('friends')">🤝 友情链接</div>
+        <div class="nav-item" onclick="switchTab('projects')">💻 项目展示</div>
+        <div class="nav-item" onclick="switchTab('skills')">🛠️ 技能栈</div>
+        <div class="nav-item" onclick="switchTab('timeline')">📅 时间轴</div>
+    </nav>
+</aside>
+
+<main class="main">
+    <!-- ================= 1. 文章 (Article) ================= -->
+    <div id="view-article" class="content-view">
+        <div class="header"><h1>📝 发布新文章</h1><p>Multipart Form: Frontmatter(JSON) + MD + Cover + Images</p></div>
+        <div class="card">
+            <form id="articleForm" onsubmit="handleArticleSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>URL Slug (文件夹名) *</label>
+                        <input type="text" id="slug" required placeholder="my-post" pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$" minlength="3" maxlength="60">
+                        <div class="hint">小写字母、数字、连字符，3-60 字符</div>
+                    </div>
+                    <div class="form-group full-width"><label>标题</label><input type="text" id="fm_title" required></div>
+                    <div class="form-group full-width"><label>描述</label><input type="text" id="fm_description" required></div>
+                    <div class="form-group"><label>分类</label><input type="text" id="fm_category" placeholder="教程"></div>
+                    <div class="form-group"><label>发布日期</label><input type="date" id="fm_published"></div>
+                    <div class="form-group"><label>许可协议</label><select id="fm_licenseName"><option value="MIT">MIT</option><option value="CC BY-NC-SA 4.0">CC BY-NC-SA 4.0</option></select></div>
+                    <div class="form-group"><label>状态</label>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch"><input type="checkbox" id="fm_draft"><span class="slider"></span></label><span>草稿</span>
+                            <label class="toggle-switch" style="margin-left:20px"><input type="checkbox" id="fm_pinned"><span class="slider"></span></label><span>置顶</span>
+                        </div>
+                    </div>
+                    <div class="form-group full-width"><label>标签</label><div class="tags-input" id="articleTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'articleTags')"></div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>封面图片 *</label>
+                        <div class="file-drop-zone" onclick="document.getElementById('coverFile').click()">
+                            <p>点击上传封面</p>
+                            <input type="file" id="coverFile" accept="image/*" hidden required onchange="showFileName('coverFile', 'coverName')">
+                        </div>
+                        <div id="coverName" class="hint"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>正文 Markdown *</label>
+                        <div class="file-drop-zone" onclick="document.getElementById('mdFile').click()">
+                            <p>点击上传 .md</p>
+                            <input type="file" id="mdFile" accept=".md" hidden required onchange="showFileName('mdFile', 'mdName')">
+                        </div>
+                        <div id="mdName" class="hint"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>文章内图片 (多选)</label>
+                    <div class="file-drop-zone" onclick="document.getElementById('imageFiles').click()">
+                        <p>点击上传多张插图</p>
+                        <input type="file" id="imageFiles" accept="image/*" multiple hidden onchange="showFileNames('imageFiles', 'imageList')">
+                    </div>
+                    <div id="imageList" class="file-list"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">🚀 上传至 GitHub</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 2. 日记 (Diary) ================= -->
+    <div id="view-diary" class="content-view hidden">
+        <div class="header"><h1>📔 写日记</h1><p>Step 1: Upload Image -> Step 2: Submit Data</p></div>
+        <div class="card">
+            <div class="form-group" style="background: #f0fdf4; padding: 20px; border-radius: 8px; border: 1px solid var(--success);">
+                <label style="color: var(--success)">1. 上传配图</label>
+                <div class="file-drop-zone" style="border-color: var(--success); background: white;" onclick="document.getElementById('diaryCoverInput').click()">
+                    <p>选择图片上传</p>
+                    <input type="file" id="diaryCoverInput" accept="image/*" hidden onchange="uploadDiaryImage(this)">
+                </div>
+                <div id="diaryUploadStatus" class="hint" style="margin-top: 10px; font-weight: bold;"></div>
+            </div>
+            <form id="diaryForm" onsubmit="handleDiarySubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group"><label>日期</label><input type="date" id="diaryDate" required></div>
+                    <div class="form-group"><label>ID (可选)</label><input type="number" id="diaryId" placeholder="自动递增"></div>
+                    <div class="form-group full-width"><label>内容</label><textarea id="diaryContent" rows="6" maxlength="2000" required></textarea></div>
+                    <div class="form-group full-width">
+                        <label>关联图片</label>
+                        <div class="tags-input" id="diaryImagesTags"></div>
+                        <input type="text" class="tag-input-field" placeholder="手动输入文件名回车" onkeydown="handleManualTag(event, 'diaryImagesTags')">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 保存日记</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 3. 番剧 (Anime) ================= -->
+    <div id="view-anime" class="content-view hidden">
+        <div class="header"><h1>📺 番剧追踪</h1></div>
+        <div class="card">
+            <form id="animeForm" onsubmit="handleAnimeSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width"><label>标题</label><input type="text" id="anime_title" required maxlength="30"></div>
+                    <div class="form-group"><label>状态</label><select id="anime_status"><option value="watching">Watching</option><option value="completed">Completed</option><option value="planned">Planned</option></select></div>
+                    <div class="form-group"><label>评分 (0-10)</label><input type="number" id="anime_rating" step="0.1" min="0" max="10" required></div>
+                    <div class="form-group"><label>封面 URL</label><input type="url" id="anime_cover" required></div>
+                    <div class="form-group"><label>工作室</label><input type="text" id="anime_studio" required></div>
+                    <div class="form-group"><label>年份</label><input type="text" id="anime_year" required></div>
+                    <div class="form-group"><label>总集数</label><input type="number" id="anime_totalEpisodes" required></div>
+                    <div class="form-group"><label>进度</label><input type="number" id="anime_progress" required></div>
+                    <div class="form-group"><label>开始日期 (YYYY-MM)</label><input type="text" id="anime_startDate" placeholder="2023-10" required></div>
+                    <div class="form-group"><label>结束日期</label><input type="text" id="anime_endDate" placeholder="留空连载中"></div>
+                    <div class="form-group full-width"><label>类型</label><div class="tags-input" id="animeGenreTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'animeGenreTags')"></div>
+                    <div class="form-group full-width"><label>简介</label><textarea id="anime_description" rows="3"></textarea></div>
+                    <div class="form-group full-width"><label>链接</label><input type="url" id="anime_link"></div>
+                    <div class="form-group full-width"><label>集数列表</label><input type="text" id="anime_episodes"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 保存番剧</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 4. 友链 (Friends) ================= -->
+    <div id="view-friends" class="content-view hidden">
+        <div class="header"><h1>🤝 友情链接</h1></div>
+        <div class="card">
+            <form id="friendsForm" onsubmit="handleFriendsSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width"><label>网站名称</label><input type="text" id="friend_title" required maxlength="200"></div>
+                    <div class="form-group"><label>头像 URL</label><input type="url" id="friend_imgurl" required pattern="^https?://.+"></div>
+                    <div class="form-group"><label>网站 URL</label><input type="url" id="friend_siteurl" required pattern="^https?://.+"></div>
+                    <div class="form-group full-width"><label>简介</label><textarea id="friend_desc" maxlength="200" required></textarea></div>
+                    <div class="form-group full-width"><label>标签</label><div class="tags-input" id="friendTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'friendTags')"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">🤝 添加友链</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 5. 项目 (Projects) ================= -->
+    <div id="view-projects" class="content-view hidden">
+        <div class="header"><h1>💻 项目展示</h1></div>
+        <div class="card">
+            <form id="projectsForm" onsubmit="handleProjectsSubmit(event)">
+                <div class="form-grid three-col">
+                    <div class="form-group"><label>项目 ID</label><input type="text" id="proj_id" required></div>
+                    <div class="form-group full-width"><label>名称</label><input type="text" id="proj_title" required></div>
+                    <div class="form-group"><label>分类</label><select id="proj_category"><option value="web">Web</option><option value="mobile">Mobile</option><option value="desktop">Desktop</option><option value="other">Other</option></select></div>
+                    <div class="form-group"><label>状态</label><select id="proj_status"><option value="in-progress">进行中</option><option value="completed">已完成</option><option value="planned">计划中</option></select></div>
+                    <div class="form-group"><label>开始日期</label><input type="date" id="proj_startDate" required></div>
+                    <div class="form-group"><label>结束日期</label><input type="date" id="proj_endDate"></div>
+                    <div class="form-group"><label>封面（可选）</label><input type="text" id="proj_image" placeholder="URL"></div>
+                    <div class="form-group full-width"><label>描述</label><textarea id="proj_description" required></textarea></div>
+                    <div class="form-group"><label>Demo（可选）</label><input type="url" id="proj_liveDemo"></div>
+                    <div class="form-group"><label>github链接</label><input type="url" id="proj_sourceCode"></div>
+                    <div class="form-group"><label>访问（可选）</label><input type="url" id="proj_visitUrl"></div>
+                    <div class="form-group full-width"><label>技术栈</label><div class="tags-input" id="projectTechTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'projectTechTags')"></div>
+                    <div class="form-group full-width"><label>标签</label><div class="tags-input" id="projectTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'projectTags')"></div>
+                    <div class="form-group"><label>精选</label><div class="toggle-wrapper"><label class="toggle-switch"><input type="checkbox" id="proj_featured"><span class="slider"></span></label><span>是</span></div></div>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 保存项目</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 6. 技能 (Skills) ================= -->
+    <div id="view-skills" class="content-view hidden">
+        <div class="header"><h1>🛠️ 技能栈</h1></div>
+        <div class="card">
+            <form id="skillsForm" onsubmit="handleSkillsSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group"><label>ID (小写)</label><input type="text" id="skill_id" required style="text-transform: lowercase;"></div>
+                    <div class="form-group"><label>名称</label><input type="text" id="skill_name" required></div>
+                    <div class="form-group"><label>图标</label><input type="text" id="skill_icon" placeholder="logos:react" required></div>
+                    <div class="form-group"><label>分类</label><select id="skill_category"><option value="frontend">Frontend</option><option value="backend">Backend</option><option value="database">Database</option><option value="tools">Tools</option></select></div>
+                    <div class="form-group"><label>水平</label><select id="skill_level"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
+                    <div class="form-group"><label>颜色</label><input type="color" id="skill_colorHex" style="height:40px;"><input type="text" id="skill_color" placeholder="#RRGGBB" style="margin-top:5px;"></div>
+                    <div class="form-group full-width"><label>描述</label><textarea id="skill_description" required></textarea></div>
+                </div>
+                <div class="nested-card">
+                    <div class="nested-header">⏳ 经验时长</div>
+                    <div class="form-grid" style="gap:15px;">
+                        <div class="form-group"><label>年</label><input type="number" id="expYears" value="0" min="0"></div>
+                        <div class="form-group"><label>月 (0-11)</label><input type="number" id="expMonths" value="0" min="0" max="11"></div>
+                    </div>
+                </div>
+                <div class="form-group"><label>关联项目</label><div class="tags-input" id="skillProjTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'skillProjTags')"></div>
+                <div class="form-group"><label>证书</label><div class="tags-input" id="skillCertTags"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'skillCertTags')"></div>
+                <button type="submit" class="btn btn-primary">💾 保存技能</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= 7. 时间轴 (Timeline) ================= -->
+    <div id="view-timeline" class="content-view hidden">
+        <div class="header"><h1>📅 时间轴</h1></div>
+        <div class="card">
+            <form id="timelineForm" onsubmit="handleTimelineSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group"><label>事件 ID</label><input type="text" id="tl_id" required></div>
+                    <div class="form-group"><label>类型</label><select id="tl_type"><option value="education">教育</option><option value="work">工作</option><option value="project">项目</option></select></div>
+                    <div class="form-group full-width"><label>标题</label><input type="text" id="tl_title" required></div>
+                    <div class="form-group"><label>开始日期</label><input type="date" id="tl_startDate" required></div>
+                    <div class="form-group"><label>结束日期</label><input type="date" id="tl_endDate"></div>
+                    <div class="form-group"><label>地点</label><input type="text" id="tl_location"></div>
+                    <div class="form-group"><label>机构</label><input type="text" id="tl_organization"></div>
+                    <div class="form-group"><label>职位</label><input type="text" id="tl_position"></div>
+                    <div class="form-group full-width"><label>描述</label><textarea id="tl_description" required></textarea></div>
+                    <div class="form-group"><label>图标</label><input type="text" id="tl_icon" placeholder="mdi:school"></div>
+                    <div class="form-group"><label>颜色</label><input type="color" id="tl_colorHex" style="height:40px;"><input type="text" id="tl_color" style="margin-top:5px;"></div>
+                    <div class="form-group"><label>精选</label><div class="toggle-wrapper"><label class="toggle-switch"><input type="checkbox" id="tl_featured"><span class="slider"></span></label></div></div>
+                </div>
+                <div class="form-group"><label>技能</label><div class="tags-input" id="tlSkills"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'tlSkills')"></div>
+                <div class="form-group"><label>成就</label><div class="tags-input" id="tlAchievements"></div><input type="text" class="tag-input-field" placeholder="回车添加" onkeydown="handleTagInput(event, 'tlAchievements')"></div>
+
+                <div class="nested-card">
+                    <div class="nested-header">🔗 相关链接 <button type="button" class="btn-add" onclick="addEventLink()">+ 添加</button></div>
+                    <div id="eventLinksContainer"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 保存事件</button>
+            </form>
+        </div>
+    </div>
+
+</main>
+
+<!-- 全局 Toast 容器 -->
+<div id="toast-container"></div>
+
+<script>
+    // ================= 配置区域 =================
+    const API_BASE = 'http://127.0.0.1:8000/api';
+
+    const ENDPOINTS = {
+        article: `${API_BASE}/article/upload`,
+        diaryImage: `${API_BASE}/diary/add_diary_cover`,
+        diary: `${API_BASE}/diary/add_diary`,
+        anime: `${API_BASE}/anime/add_anime`,
+        friends: `${API_BASE}/friends/add_friends`,
+        projects: `${API_BASE}/projects/add_projects`,
+        skills: `${API_BASE}/skills/add_skill`,
+        timeline: `${API_BASE}/timeline/add_timeline`
+    };
+
+    // ================= 工具函数 =================
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => toast.classList.add('show'));
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    const tagSystems = {};
+    function initTagSystem(containerId) {
+        if(!document.getElementById(containerId)) return;
+        const container = document.getElementById(containerId);
+        if(!container.querySelector('.tag-input-field')) {
+            const input = document.createElement('input');
+            input.type = 'text'; input.className = 'tag-input-field'; input.placeholder = '回车添加';
+            input.onkeydown = (e) => { if(e.key==='Enter'){ e.preventDefault(); addTag(containerId, input.value.trim()); input.value=''; }};
+            container.appendChild(input);
+        }
+        tagSystems[containerId] = { items: [], container: container };
+    }
+
+    function handleTagInput(e, id) { if(e.key==='Enter') { e.preventDefault(); addTag(id, e.target.value.trim()); e.target.value=''; } }
+    function handleManualTag(e, id) { if(e.key==='Enter') { e.preventDefault(); addTag(id, e.target.value.trim()); e.target.value=''; } }
+
+    function addTag(id, val) {
+        if(!val || (tagSystems[id] && tagSystems[id].items.includes(val))) return;
+        if(!tagSystems[id]) tagSystems[id] = { items: [], container: document.getElementById(id) };
+        tagSystems[id].items.push(val);
+        renderTags(id);
+    }
+
+    function removeTag(id, idx) { if(tagSystems[id]) { tagSystems[id].items.splice(idx, 1); renderTags(id); } }
+
+    function renderTags(id) {
+        const sys = tagSystems[id];
+        if(!sys) return;
+        const input = sys.container.querySelector('.tag-input-field');
+        sys.container.innerHTML = '';
+        sys.items.forEach((item, i) => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `${item} <span onclick="removeTag('${id}', ${i})">&times;</span>`;
+            sys.container.appendChild(tag);
+        });
+        sys.container.appendChild(input);
+        input.focus();
+    }
+
+    function switchTab(id) {
+        document.querySelectorAll('.content-view').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${id}`).classList.remove('hidden');
+        event.currentTarget.classList.add('active');
+    }
+
+    function showFileName(inputId, displayId) {
+        const file = document.getElementById(inputId).files[0];
+        if(file) document.getElementById(displayId).textContent = `已选：${file.name}`;
+    }
+
+    function showFileNames(inputId, listId) {
+        const files = document.getElementById(inputId).files;
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+        for(let f of files) {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<span>${f.name}</span> <span style="color:green">✔</span>`;
+            list.appendChild(div);
+        }
+    }
+
+    function addEventLink() {
+        const container = document.getElementById('eventLinksContainer');
+        if(!container) return;
+        const div = document.createElement('div');
+        div.className = 'nested-card';
+        div.style.background = '#fff';
+        div.style.border = '1px solid var(--border)';
+        div.style.marginTop = '10px';
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><strong>链接</strong> <button type="button" class="btn-remove" onclick="this.parentElement.parentElement.remove()">删除</button></div>
+            <div class="form-grid" style="gap:10px; grid-template-columns: 1fr 1fr 1fr;">
+                <input type="text" class="link-label" placeholder="名称" required style="padding:8px;">
+                <input type="url" class="link-url" placeholder="URL" required style="padding:8px;">
+                <select class="link-type" style="padding:8px;"><option value="website">Web</option><option value="github">GitHub</option><option value="doc">Doc</option></select>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    // ================= 核心逻辑：真实请求 =================
+
+    // 1. 文章上传
+    async function handleArticleSubmit(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "🚀 上传中...";
+
+        try {
+            const frontmatter = {
+                title: document.getElementById('fm_title').value,
+                description: document.getElementById('fm_description').value,
+                category: document.getElementById('fm_category').value,
+                published: document.getElementById('fm_published').value,
+                licenseName: document.getElementById('fm_licenseName').value,
+                draft: document.getElementById('fm_draft').checked,
+                pinned: document.getElementById('fm_pinned').checked,
+                tags: tagSystems['articleTags'] ? tagSystems['articleTags'].items : [],
+                image: "./1.webp"
+            };
+
+            const formData = new FormData();
+            formData.append('frontmatter', JSON.stringify(frontmatter));
+            formData.append('slug', document.getElementById('slug').value);
+
+            const mdFile = document.getElementById('mdFile').files[0];
+            const coverFile = document.getElementById('coverFile').files[0];
+
+            if(!mdFile || !coverFile) throw new Error("请上传 MD 文件和封面图");
+
+            formData.append('md_file', mdFile);
+            formData.append('cover', coverFile);
+
+            const imgFiles = document.getElementById('imageFiles').files;
+            for(let i=0; i<imgFiles.length; i++) formData.append('image', imgFiles[i]);
+
+            const res = await fetch(ENDPOINTS.article, { method: 'POST', body: formData });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "未知错误" }));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            showToast("✅ 文章发布成功！", "success");
+            e.target.reset();
+            if(tagSystems['articleTags']) { tagSystems['articleTags'].items = []; renderTags('articleTags'); }
+            document.getElementById('coverName').textContent = '';
+            document.getElementById('mdName').textContent = '';
+            document.getElementById('imageList').innerHTML = '';
+
+        } catch (err) {
+            console.error(err);
+            showToast("❌ 上传失败：" + err.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+
+    // 2. 日记图片上传
+    async function uploadDiaryImage(input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        const statusDiv = document.getElementById('diaryUploadStatus');
+        statusDiv.textContent = "⏳ 正在上传...";
+        statusDiv.style.color = "var(--text-sub)";
+
+        const formData = new FormData();
+        formData.append('cover', file);
+
+        try {
+            const res = await fetch(ENDPOINTS.diaryImage, { method: 'POST', body: formData });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "上传失败" }));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            // 假设后端返回 { "filename": "xxx.jpg" } 或 { "url": "..." }
+            const uploadedFilename = data.filename || data.url || file.name;
+
+            statusDiv.textContent = `✅ 上传成功：${uploadedFilename}`;
+            statusDiv.style.color = "var(--success)";
+
+            addTag('diaryImagesTags', uploadedFilename);
+            input.value = '';
+        } catch(err) {
+            console.error(err);
+            statusDiv.textContent = "❌ 上传失败：" + err.message;
+            statusDiv.style.color = "var(--danger)";
+            showToast("图片上传失败", "error");
+        }
+    }
+
+    // 2. 日记数据提交
+    async function handleDiarySubmit(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerText = "💾 保存中...";
+
+        try {
+            const diaryData = {
+                id: document.getElementById('diaryId').value ? parseInt(document.getElementById('diaryId').value) : undefined,
+                content: document.getElementById('diaryContent').value,
+                date: document.getElementById('diaryDate').value,
+                images: tagSystems['diaryImagesTags'] ? tagSystems['diaryImagesTags'].items : []
+            };
+
+            const res = await fetch(ENDPOINTS.diary, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(diaryData)
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "保存失败" }));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            showToast("✅ 日记保存成功！", "success");
+            e.target.reset();
+            if(tagSystems['diaryImagesTags']) { tagSystems['diaryImagesTags'].items = []; renderTags('diaryImagesTags'); }
+            document.getElementById('diaryUploadStatus').textContent = '';
+
+        } catch (err) {
+            console.error(err);
+            showToast("❌ 保存失败：" + err.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "💾 保存日记";
+        }
+    }
+
+    // 通用 JSON 提交处理器
+    function createJsonSubmitHandler(endpointUrl, getDataFn, successMsg) {
+        return async function(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "💾 保存中...";
+
+            try {
+                const data = getDataFn();
+                const res = await fetch(endpointUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({ detail: "操作失败" }));
+                    throw new Error(errData.detail || `HTTP ${res.status}`);
+                }
+
+                showToast(successMsg, "success");
+                e.target.reset();
+                // 重置当前表单内的所有标签
+                Object.keys(tagSystems).forEach(key => {
+                    if(document.getElementById(key) && document.getElementById(key).closest('form') === e.target) {
+                        tagSystems[key].items = [];
+                        renderTags(key);
+                    }
+                });
+
+            } catch (err) {
+                console.error(err);
+                showToast("❌ 失败：" + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        };
+    }
+
+    // 3. 番剧
+    const handleAnimeSubmit = createJsonSubmitHandler(ENDPOINTS.anime, () => ({
+        title: document.getElementById('anime_title').value,
+        status: document.getElementById('anime_status').value,
+        rating: parseFloat(document.getElementById('anime_rating').value),
+        cover: document.getElementById('anime_cover').value,
+        studio: document.getElementById('anime_studio').value,
+        year: document.getElementById('anime_year').value,
+        totalEpisodes: parseInt(document.getElementById('anime_totalEpisodes').value),
+        progress: parseInt(document.getElementById('anime_progress').value),
+        startDate: document.getElementById('anime_startDate').value,
+        endDate: document.getElementById('anime_endDate').value || null,
+        genre: tagSystems['animeGenreTags'] ? tagSystems['animeGenreTags'].items : [],
+        description: document.getElementById('anime_description').value,
+        link: document.getElementById('anime_link').value,
+        episodes: document.getElementById('anime_episodes').value
+    }), "✅ 番剧添加成功！");
+
+    // 4. 友链
+    const handleFriendsSubmit = createJsonSubmitHandler(ENDPOINTS.friends, () => ({
+        title: document.getElementById('friend_title').value,
+        imgurl: document.getElementById('friend_imgurl').value,
+        siteurl: document.getElementById('friend_siteurl').value,
+        desc: document.getElementById('friend_desc').value,
+        tags: tagSystems['friendTags'] ? tagSystems['friendTags'].items : []
+    }), "✅ 友链添加成功！");
+
+    // 5. 项目
+    const handleProjectsSubmit = createJsonSubmitHandler(ENDPOINTS.projects, () => ({
+        id: document.getElementById('proj_id').value,
+        title: document.getElementById('proj_title').value,
+        category: document.getElementById('proj_category').value,
+        status: document.getElementById('proj_status').value,
+        startDate: document.getElementById('proj_startDate').value,
+        endDate: document.getElementById('proj_endDate').value || null,
+        image: document.getElementById('proj_image').value,
+        description: document.getElementById('proj_description').value,
+        liveDemo: document.getElementById('proj_liveDemo').value,
+        sourceCode: document.getElementById('proj_sourceCode').value,
+        visitUrl: document.getElementById('proj_visitUrl').value,
+        techStack: tagSystems['projectTechTags'] ? tagSystems['projectTechTags'].items : [],
+        tags: tagSystems['projectTags'] ? tagSystems['projectTags'].items : [],
+        featured: document.getElementById('proj_featured').checked
+    }), "✅ 项目保存成功！");
+
+    // 6. 技能
+    const handleSkillsSubmit = createJsonSubmitHandler(ENDPOINTS.skills, () => ({
+        id: document.getElementById('skill_id').value,
+        name: document.getElementById('skill_name').value,
+        icon: document.getElementById('skill_icon').value,
+        category: document.getElementById('skill_category').value,
+        level: document.getElementById('skill_level').value,
+        color: document.getElementById('skill_color').value || document.getElementById('skill_colorHex').value,
+        description: document.getElementById('skill_description').value,
+        experience: {
+            years: parseInt(document.getElementById('expYears').value),
+            months: parseInt(document.getElementById('expMonths').value)
+        },
+        projects: tagSystems['skillProjTags'] ? tagSystems['skillProjTags'].items : [],
+        certifications: tagSystems['skillCertTags'] ? tagSystems['skillCertTags'].items : []
+    }), "✅ 技能保存成功！");
+
+    // 7. 时间轴
+    const handleTimelineSubmit = createJsonSubmitHandler(ENDPOINTS.timeline, () => {
+        const links = [];
+        document.querySelectorAll('#eventLinksContainer > div').forEach(div => {
+            links.push({
+                label: div.querySelector('.link-label').value,
+                url: div.querySelector('.link-url').value,
+                type: div.querySelector('.link-type').value
+            });
+        });
+        return {
+            id: document.getElementById('tl_id').value,
+            title: document.getElementById('tl_title').value,
+            type: document.getElementById('tl_type').value,
+            startDate: document.getElementById('tl_startDate').value,
+            endDate: document.getElementById('tl_endDate').value || null,
+            location: document.getElementById('tl_location').value,
+            organization: document.getElementById('tl_organization').value,
+            position: document.getElementById('tl_position').value,
+            description: document.getElementById('tl_description').value,
+            icon: document.getElementById('tl_icon').value,
+            color: document.getElementById('tl_color').value || document.getElementById('tl_colorHex').value,
+            featured: document.getElementById('tl_featured').checked,
+            skills: tagSystems['tlSkills'] ? tagSystems['tlSkills'].items : [],
+            achievements: tagSystems['tlAchievements'] ? tagSystems['tlAchievements'].items : [],
+            links: links
+        };
+    }, "✅ 时间轴事件保存成功！");
+
+    // 初始化
+    window.onload = () => {
+        ['articleTags', 'diaryImagesTags', 'animeGenreTags', 'friendTags', 'projectTechTags', 'projectTags', 'skillProjTags', 'skillCertTags', 'tlSkills', 'tlAchievements'].forEach(initTagSystem);
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = ['fm_published', 'diaryDate', 'proj_startDate', 'tl_startDate'];
+        dateInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = today;
+        });
+        console.log("🚀 Admin Pro Ready! API Endpoints:", ENDPOINTS);
+    };
+</script>
+</body>
+</html>
