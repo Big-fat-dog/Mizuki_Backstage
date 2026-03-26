@@ -62,6 +62,11 @@
         .toast.success { background: var(--success); }
         .toast.error { background: var(--danger); }
         .toast.show { transform: translateX(0); }
+        .btn-secondary { background: #e5e7eb; color: var(--text-main); }
+        .btn-secondary:hover { background: #d1d5db; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-danger:disabled { background: #fca5a5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -76,6 +81,7 @@
         <div class="nav-item" onclick="switchTab('projects')">💻 项目展示</div>
         <div class="nav-item" onclick="switchTab('skills')">🛠️ 技能栈</div>
         <div class="nav-item" onclick="switchTab('timeline')">📅 时间轴</div>
+        <div class="nav-item" onclick="switchTab('delete')">🗑️ 删除文章</div>
     </nav>
 </aside>
 
@@ -291,9 +297,48 @@
             </form>
         </div>
     </div>
+       <!-- ================= 8.删除文章模块 (Delete Article) ================= -->
+    <div id="view-delete" class="content-view hidden">
+        <div class="header">
+            <h1>🗑️ 管理/删除文章</h1>
+            <p>从列表中选择一个文章进行删除操作 (不可恢复)</p>
+        </div>
 
-</main>
+        <!-- 阶段 1: 文章列表 -->
+        <div id="delete-step-list" class="card">
+            <div class="form-group full-width">
+                <label>操作</label>
+                <button type="button" class="btn btn-primary" onclick="loadArticleList()" style="width:100%">🔄 刷新列表</button>
+            </div>
+            <div id="article-list-container" class="file-list" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #f9fafb;">
+                <p style="text-align:center; color: var(--text-sub); padding: 20px;">点击“刷新列表”加载数据</p>
+            </div>
+        </div>
 
+        <!-- 阶段 2: 确认删除 (默认隐藏) -->
+        <div id="delete-step-confirm" class="card" style="display: none; margin-top: 20px; border: 2px solid var(--danger);">
+            <div class="header" style="border-bottom: 1px solid var(--danger); margin-bottom: 20px;">
+                <h2 style="color: var(--danger);">⚠️ 确认删除</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>选中文件路径</label>
+                    <input type="text" id="delete-file-path" readonly style="background: #fef2f2; color: var(--danger); font-family: monospace; font-weight: bold;">
+                </div>
+                <div class="form-group full-width">
+                    <label>风险提示</label>
+                    <div class="hint" style="color: var(--danger); font-weight: 500;">
+                        此操作将直接从 GitHub 仓库中物理删除该文件。<br>
+                        请确保你已备份重要内容，删除后无法通过本界面撤销！
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button type="button" class="btn btn-secondary" onclick="cancelDelete()" style="flex: 1;">❌ 取消</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteAction()" style="flex: 1;">☠️ 确认删除</button>
+            </div>
+        </div>
+    </div>
 <!-- 全局 Toast 容器 -->
 <div id="toast-container"></div>
 
@@ -309,7 +354,9 @@
         friends: `${API_BASE}/friends/add_friends`,
         projects: `${API_BASE}/projects/add_projects`,
         skills: `${API_BASE}/skills/add_skill`,
-        timeline: `${API_BASE}/timeline/add_timeline`
+        timeline: `${API_BASE}/timeline/add_timeline`,
+        getAllArticles: `${API_BASE}/article/get_all_articles`,
+        deleteArticle: `${API_BASE}/article/delete_article`
     };
 
     // ================= 工具函数 =================
@@ -681,6 +728,119 @@
             links: links
         };
     }, "✅ 时间轴事件保存成功！");
+    // ================= 删除文章专用逻辑 =================
+    let currentDeletePath = "";
+
+    // 1. 加载列表
+    async function loadArticleList() {
+        const container = document.getElementById('article-list-container');
+        const btn = document.querySelector('#delete-step-list button');
+
+        btn.disabled = true;
+        btn.innerText = "⏳ 加载中...";
+        container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-sub);">正在请求 /get_all_articles...</p>';
+
+        try {
+            const res = await fetch(ENDPOINTS.getAllArticles, { method: 'GET' });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const data = await res.json();
+            const contents = data.data || [];
+
+            if (contents.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-sub);">暂无文章。</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            contents.forEach(item => {
+                // 兼容后端返回字符串或对象
+                const path = typeof item === 'string' ? item : (item.path || item.file_path || '');
+                if(!path) return;
+
+                const fileName = path.split('/').pop();
+
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.style.cssText = `
+                    display: flex; justify-content: space-between; align-items: center;
+                    padding: 12px; border-bottom: 1px solid var(--border);
+                    cursor: pointer; transition: background 0.2s; border-radius: 4px;
+                `;
+                div.onmouseover = () => div.style.background = '#eef2ff';
+                div.onmouseout = () => div.style.background = 'transparent';
+
+                div.innerHTML = `
+                    <span style="font-family: monospace; font-size: 0.9em; color: var(--text-main);">📄 ${fileName}</span>
+                    <span style="font-size: 0.75em; color: var(--text-sub); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${path}</span>
+                `;
+
+                div.onclick = () => selectArticleToDelete(path);
+                container.appendChild(div);
+            });
+
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<p style="text-align:center; color: var(--danger);">❌ 加载失败：${err.message}</p>`;
+            showToast("获取文章列表失败", "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "🔄 刷新列表";
+        }
+    }
+
+    // 2. 选中某一项
+    function selectArticleToDelete(path) {
+        currentDeletePath = path;
+        document.getElementById('delete-file-path').value = path;
+
+        // 切换视图
+        document.getElementById('delete-step-list').style.display = 'none';
+        document.getElementById('delete-step-confirm').style.display = 'block';
+    }
+
+    // 3. 取消操作
+    function cancelDelete() {
+        currentDeletePath = "";
+        document.getElementById('delete-file-path').value = "";
+        document.getElementById('delete-step-confirm').style.display = 'none';
+        document.getElementById('delete-step-list').style.display = 'block';
+    }
+
+    // 4. 确认删除 (调用 POST 接口)
+    async function confirmDeleteAction() {
+        if (!currentDeletePath) return;
+
+        const btn = document.querySelector('#delete-step-confirm .btn-danger');
+        const originalText = btn.innerText;
+
+        btn.disabled = true;
+        btn.innerText = "☠️ 删除中...";
+
+        try {
+            // 构造 URL: /delete_article?file_path=xxx
+            const url = `${ENDPOINTS.deleteArticle}?file_path=${encodeURIComponent(currentDeletePath)}`;
+
+            const res = await fetch(url, { method: 'POST' });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "删除失败" }));
+                throw new Error(errData.detail || `HTTP ${res.status}`);
+            }
+
+            showToast("✅ 文章已成功删除！", "success");
+            cancelDelete();
+            loadArticleList(); // 刷新列表
+
+        } catch (err) {
+            console.error(err);
+            showToast("❌ 删除失败：" + err.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
 
     // 初始化
     window.onload = () => {
