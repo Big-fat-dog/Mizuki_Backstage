@@ -57,11 +57,6 @@
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @media (max-width: 768px) { body { flex-direction: column; height: auto; overflow: auto; } .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); } .form-grid, .three-col { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
 
-        /* 新增：Toast 提示样式 */
-        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateX(150%); transition: transform 0.3s ease; z-index: 9999; }
-        .toast.success { background: var(--success); }
-        .toast.error { background: var(--danger); }
-        .toast.show { transform: translateX(0); }
         .btn-secondary { background: #e5e7eb; color: var(--text-main); }
         .btn-secondary:hover { background: #d1d5db; }
         .btn-danger { background: var(--danger); color: white; }
@@ -854,5 +849,6 @@
         console.log("🚀 Admin Pro Ready! API Endpoints:", ENDPOINTS);
     };
 </script>
+    </main>
 </body>
 </html>
