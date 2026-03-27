@@ -196,6 +196,8 @@
         <div class="card">
             <form id="friendsForm" onsubmit="handleFriendsSubmit(event)">
                 <div class="form-grid">
+                    <!-- 新增：ID 输入框 -->
+                    <div class="form-group"><label>唯一标识 ID *</label><input type="number" id="friend_id" required placeholder="例如: 1"></div>
                     <div class="form-group full-width"><label>网站名称</label><input type="text" id="friend_title" required maxlength="200"></div>
                     <div class="form-group"><label>头像 URL</label><input type="url" id="friend_imgurl" required pattern="^https?://.+"></div>
                     <div class="form-group"><label>网站 URL</label><input type="url" id="friend_siteurl" required pattern="^https?://.+"></div>
@@ -653,6 +655,8 @@
 
     // 4. 友链
     const handleFriendsSubmit = createJsonSubmitHandler(ENDPOINTS.friends, () => ({
+        // 新增：获取 ID (转为整数)
+        id: parseInt(document.getElementById('friend_id').value),
         title: document.getElementById('friend_title').value,
         imgurl: document.getElementById('friend_imgurl').value,
         siteurl: document.getElementById('friend_siteurl').value,
