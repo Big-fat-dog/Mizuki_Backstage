@@ -103,4 +103,6 @@ Server: Uvicorn - 闪电般的 ASGI 服务器
 Env Management: python-dotenv - 环境变量加载
 Language: Python 3.8+
 
+## 致谢
+Linux.do 提供了开放的社区讨论与知识分享环境。
 Made with ❤️ by Fatdog
